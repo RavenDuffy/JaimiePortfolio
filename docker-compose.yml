@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  frontend:
+    container_name: ${CLIENT_NAME}-frontend
+    build: ./frontend
+    working_dir: /var/www/html/
+    ports:
+      - 3000:3000
+    depends_on:
+      cms:
+        condition: service_healthy
+    volumes:
+      - ./frontend:/var/www/html/
+    env_file:
+      - .env
+    entrypoint: "sh /var/www/html/entrypoint.sh"
+
+  cms:
+    container_name: ${CLIENT_NAME}-cms
+    build: ./cms
+    working_dir: /var/www/html/
+    ports:
+      - 1337:1337
+    depends_on:
+      - db
+    healthcheck:
+      test: curl -f http://localhost:1337 || exit 1
+      retries: 10
+    volumes:
+      - ./cms:/var/www/html/
+    env_file:
+      - .env
+    entrypoint: "sh /var/www/html/entrypoint.sh"
+
+  db:
+    container_name: ${CLIENT_NAME}-db
+    image: postgres:16-alpine
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data/
+    restart: always
+
+volumes:
+  db_data:
