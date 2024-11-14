@@ -11,7 +11,7 @@ export async function generateStaticParams() {
       },
     },
   })
-  const homePageSlug = settings.data?.homePage?.data?.slug
+  const homePageSlug = settings.data?.homePage?.slug
 
   return pages.map((page) => {
     const isIndex =
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageParams) {
         },
       },
     })
-    slug = settings.data?.homePage?.data?.slug
+    slug = settings.data?.homePage?.slug
 
     if (typeof slug !== "string") {
       return
@@ -47,9 +47,9 @@ export async function generateMetadata({ params }: PageParams) {
 }
 
 export default async function Page({ params }: PageParams) {
-  let slug = params.slug?.[0] ?? params.slug
+  let slug = params.slug?.[0]
 
-  if (typeof params.slug === "undefined") {
+  if (typeof slug === "undefined") {
     const settings = await getByType("site-setting", {
       populate: {
         homePage: {

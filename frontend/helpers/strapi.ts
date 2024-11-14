@@ -22,7 +22,7 @@ const request = async (path: string, options = {}) => {
   return await response.json()
 }
 
-export const get = async (path: string, params, options = {}) => {
+export const get = async (path: string, params) => {
   const query = params ? `?${stringify(params)}` : ""
   return await request(`${path}${query}`, params)
 }
@@ -47,8 +47,8 @@ export const getAllByType = async (contentType: string, params = {}) => {
       },
     })
 
-    if (query && (query?.data !== null || query?.data?.length > 0)) {
-      for (const entry of query.data) entries.push(entry)
+    if (query && query?.data?.length > 0) {
+      query.data.forEach((entry) => entries.push(entry))
 
       if (
         typeof query.meta.pagination === `undefined` ||
