@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_blocks_image_and_texts",
+  "info": {
+    "displayName": "Image and Text"
+  },
+  "options": {},
+  "attributes": {
+    "image": {
+      "allowedTypes": [
+        "images"
+      ],
+      "type": "media",
+      "multiple": false
+    },
+    "text": {
+      "type": "text"
+    }
+  }
+}

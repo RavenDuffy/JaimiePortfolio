@@ -1,20 +1,20 @@
-import type { Schema, Attribute } from '@strapi/strapi';
+import type { Schema, Struct } from '@strapi/strapi';
 
-export interface MetadataSeo extends Schema.Component {
-  collectionName: 'components_metadata_seos';
+export interface BlocksImageAndText extends Struct.ComponentSchema {
+  collectionName: 'components_blocks_image_and_texts';
   info: {
-    displayName: 'seo';
-    icon: 'earth';
+    displayName: 'Image and Text';
   };
   attributes: {
-    metaTitle: Attribute.String;
+    image: Schema.Attribute.Media<'images'>;
+    text: Schema.Attribute.Text;
   };
 }
 
-declare module '@strapi/types' {
-  export module Shared {
-    export interface Components {
-      'metadata.seo': MetadataSeo;
+declare module '@strapi/strapi' {
+  export module Public {
+    export interface ComponentSchemas {
+      'blocks.image-and-text': BlocksImageAndText;
     }
   }
 }

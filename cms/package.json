@@ -1,39 +1,38 @@
 {
-  "name": "cms",
+  "name": "jaimie-portfolio",
   "version": "0.1.0",
   "private": true,
   "description": "A Strapi application",
-  "license": "MIT",
-  "author": {
-    "name": "A Strapi developer"
-  },
   "scripts": {
     "build": "strapi build",
     "deploy": "strapi deploy",
     "develop": "strapi develop",
-    "disable-telemetry": "yarn strapi telemetry:disable",
     "start": "strapi start",
     "strapi": "strapi"
   },
   "dependencies": {
-    "@strapi/plugin-cloud": "4.25.11",
-    "@strapi/plugin-i18n": "4.25.11",
-    "@strapi/plugin-users-permissions": "4.25.11",
-    "@strapi/provider-upload-aws-s3": "4.25.11",
-    "@strapi/strapi": "4.25.11",
+    "@strapi/plugin-cloud": "5.4.0",
+    "@strapi/plugin-users-permissions": "5.4.0",
+    "@strapi/strapi": "5.4.0",
     "pg": "8.8.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "react-router-dom": "5.3.4",
-    "styled-components": "5.3.3"
+    "react-router-dom": "^6.0.0",
+    "styled-components": "^6.0.0"
   },
-  "packageManager": "yarn@4.4.1",
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "typescript": "^5"
+  },
   "engines": {
-    "node": ">=18.0.0 <=20.x.x",
+    "node": ">=18.0.0 <=22.x.x",
     "npm": ">=6.0.0"
   },
   "strapi": {
-    "uuid": "bc080158-04fe-4db0-9ba1-7270d00f924a",
+    "uuid": "94a7bfc0-1d02-45eb-b0f7-bd66ef6e8bc3",
     "telemetryDisabled": true
-  }
+  },
+  "packageManager": "yarn@4.5.1"
 }
