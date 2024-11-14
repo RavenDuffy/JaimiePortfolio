@@ -1,12 +1,12 @@
 #!/bin/sh
 if [ $NODE_ENV == "production" ]
   then
-    yarn install --production=false
-    yarn disable-telemetry
-    yarn build 
-    yarn start
+    npm install --production=false
+    npm run strapi telemetry:disable
+    npm run build 
+    npm run start
   else
-    yarn install
-    yarn disable-telemetry
-    yarn develop --watch-admin
+    npm install
+    npm run strapi telemetry:disable
+    npm run develop --watch-admin
 fi

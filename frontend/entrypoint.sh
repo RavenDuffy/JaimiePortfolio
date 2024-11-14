@@ -1,10 +1,10 @@
 #!/bin/sh
 if [ $NODE_ENV == "production" ]
   then
-    yarn install --production=false
-    yarn build
-    yarn start
+    npm install --production=false
+    npm run build
+    npm run start
   else
-    yarn install
-    yarn dev
+    npm install
+    npm run dev
 fi

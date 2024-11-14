@@ -1,4 +1,4 @@
-import { getAllByType, getByType } from "@/helpers/strapi"
+import { getByType, getAllByType } from "@/helpers/strapi"
 import { PageParams } from "@/types"
 
 export async function generateStaticParams() {
@@ -11,20 +11,21 @@ export async function generateStaticParams() {
       },
     },
   })
-  const homePageSlug = settings.data?.attributes.homePage?.data?.attributes.slug
+  const homePageSlug = settings.data?.homePage?.data?.slug
 
   return pages.map((page) => {
     const isIndex =
-      typeof homePageSlug === "string" && homePageSlug === page.attributes.slug
+      typeof homePageSlug === "string" && homePageSlug === page.slug
 
     return {
-      slug: !isIndex ? [`${page.attributes.slug}`] : undefined,
+      slug: !isIndex ? [`${page.slug}`] : undefined,
     }
   })
 }
 
 export async function generateMetadata({ params }: PageParams) {
-  let slug = params.slug?.[0] ?? params.slug
+  let slug = params?.slug?.[0]
+
   if (typeof params.slug === "undefined") {
     const settings = await getByType("site-setting", {
       populate: {
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: PageParams) {
         },
       },
     })
-    slug = settings.data?.attributes.homePage?.data?.attributes.slug
+    slug = settings.data?.homePage?.data?.slug
 
     if (typeof slug !== "string") {
       return
@@ -56,7 +57,7 @@ export default async function Page({ params }: PageParams) {
         },
       },
     })
-    slug = settings.data?.attributes.homePage?.data?.attributes.slug
+    slug = settings.data?.homePage?.slug
 
     if (typeof slug !== "string") {
       return
@@ -82,5 +83,5 @@ export default async function Page({ params }: PageParams) {
 
   const [page] = pages.data
 
-  return <>{page.attributes.title}</>
+  return <>{page.title}</>
 }

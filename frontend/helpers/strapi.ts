@@ -1,21 +1,19 @@
-import qs from "qs"
+import { stringify } from "qs"
 
 const apiUrl = `${process.env.STRAPI_URL}/api`
 
-/**
- * The default request headers.
- */
 const defaultHeaders = {
   Authorization: `Bearer ${process.env.STRAPI_TOKEN}`,
 }
 
-/**
- * Request wrapper to apply defaults.
- */
-export const request = async (path, options = {}) => {
-  let fetchOptions = { next: { tags: [`strapi`] }, ...options }
+const request = async (path: string, options = {}) => {
+  const fetchOptions = {
+    next: { tags: ["strapi"] },
+    headers: {},
+    ...options,
+  }
 
-  fetchOptions.headers = fetchOptions.hasOwnProperty(`headers`)
+  fetchOptions.headers = fetchOptions.hasOwnProperty("headers")
     ? { ...defaultHeaders, ...fetchOptions.headers }
     : { ...defaultHeaders }
 
@@ -24,35 +22,19 @@ export const request = async (path, options = {}) => {
   return await response.json()
 }
 
-/**
- * GET request.
- */
-export const get = async (path, params, options = {}) => {
-  const query = params ? `?${qs.stringify(params)}` : ``
-  return await request(`${path}${query}`, params, {
-    ...options,
-    method: `GET`,
-  })
+export const get = async (path: string, params, options = {}) => {
+  const query = params ? `?${stringify(params)}` : ""
+  return await request(`${path}${query}`, params)
 }
 
-/**
- * Get by type:
- * Performs a query to fetch entries for a content type.
- * The default and maximum page size is 25 entries.
- */
-export const getByType = async (contentType, params = {}) => {
+export const getByType = async (contentType: string, params = {}) => {
   return await get(contentType, params)
 }
 
-/**
- * Get all by type:
- * Performs a recursive query to fetch all entries for a content type.
- * The query is limited to 10 pages to prevent an obscure amount of requests.
- * This should be used to get all entries without pagination.
- */
-export const getAllByType = async (contentType, params = {}) => {
+export const getAllByType = async (contentType: string, params = {}) => {
   const entries = []
   const maxPages = 10
+
   let currentPage = 1
   let morePages = true
 
@@ -61,13 +43,12 @@ export const getAllByType = async (contentType, params = {}) => {
       ...params,
       pagination: {
         page: currentPage,
+        pageSize: 10,
       },
     })
 
-    if (query && (query?.data !== null || query.data.length > 0)) {
-      for (const entry of query.data) {
-        entries.push(entry)
-      }
+    if (query && (query?.data !== null || query?.data?.length > 0)) {
+      for (const entry of query.data) entries.push(entry)
 
       if (
         typeof query.meta.pagination === `undefined` ||

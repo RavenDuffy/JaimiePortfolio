@@ -14,19 +14,18 @@
   "attributes": {
     "title": {
       "type": "string",
-      "required": true,
-      "unique": false
+      "required": true
     },
     "slug": {
       "type": "uid",
       "targetField": "title",
       "required": true
     },
-    "seo": {
-      "displayName": "seo",
-      "type": "component",
-      "repeatable": false,
-      "component": "metadata.seo"
+    "body": {
+      "type": "dynamiczone",
+      "components": [
+        "blocks.image-and-text"
+      ]
     }
   }
 }
