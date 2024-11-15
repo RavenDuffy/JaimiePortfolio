@@ -1,3 +1,4 @@
+import { Page } from "@/types"
 import { stringify } from "qs"
 
 const apiUrl = `${process.env.STRAPI_URL}/api`
@@ -22,7 +23,7 @@ const request = async (path: string, options = {}) => {
   return await response.json()
 }
 
-export const get = async (path: string, params) => {
+export const get = async (path: string, params: object) => {
   const query = params ? `?${stringify(params)}` : ""
   return await request(`${path}${query}`, params)
 }
@@ -32,7 +33,7 @@ export const getByType = async (contentType: string, params = {}) => {
 }
 
 export const getAllByType = async (contentType: string, params = {}) => {
-  const entries = []
+  const entries: Page[] = []
   const maxPages = 10
 
   let currentPage = 1
@@ -48,7 +49,7 @@ export const getAllByType = async (contentType: string, params = {}) => {
     })
 
     if (query && query?.data?.length > 0) {
-      query.data.forEach((entry) => entries.push(entry))
+      query.data.forEach((entry: Page) => entries.push(entry))
 
       if (
         typeof query.meta.pagination === `undefined` ||
