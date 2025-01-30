@@ -25,7 +25,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata(props: PageParams) {
-  const params = await props.params;
+  const params = await props.params
   let slug = params?.slug?.[0]
 
   if (typeof params.slug === "undefined") {
@@ -49,7 +49,7 @@ export async function generateMetadata(props: PageParams) {
 }
 
 export default async function Page(props: PageParams) {
-  const params = await props.params;
+  const params = await props.params
   let slug = params.slug?.[0]
 
   if (typeof slug === "undefined") {
