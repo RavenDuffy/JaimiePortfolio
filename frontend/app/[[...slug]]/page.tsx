@@ -1,3 +1,4 @@
+import { DynamicZone } from "@/components"
 import { getByType, getAllByType } from "@/helpers/strapi"
 import { PageParams } from "@/types"
 
@@ -23,7 +24,8 @@ export async function generateStaticParams() {
   })
 }
 
-export async function generateMetadata({ params }: PageParams) {
+export async function generateMetadata(props: PageParams) {
+  const params = await props.params;
   let slug = params?.slug?.[0]
 
   if (typeof params.slug === "undefined") {
@@ -46,7 +48,8 @@ export async function generateMetadata({ params }: PageParams) {
   }
 }
 
-export default async function Page({ params }: PageParams) {
+export default async function Page(props: PageParams) {
+  const params = await props.params;
   let slug = params.slug?.[0]
 
   if (typeof slug === "undefined") {
@@ -83,5 +86,10 @@ export default async function Page({ params }: PageParams) {
 
   const [page] = pages.data
 
-  return <>{page.title}</>
+  return (
+    <>
+      {page.title}
+      {page.body?.length > 0 && <DynamicZone components={page.body} />}
+    </>
+  )
 }
