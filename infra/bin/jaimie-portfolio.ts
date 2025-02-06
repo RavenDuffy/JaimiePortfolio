@@ -59,6 +59,7 @@ new JaimiePortfolioStack(app, `Infra${clientName}${projectName}Stack-prod`, {
     GIT_USERNAME: process.env.GIT_USERNAME!,
     GIT_EMAIL: process.env.GIT_EMAIL!,
     GIT_REPO_URL: process.env.GIT_REPO_URL!,
+    NODE_ENV: "production",
   },
   env: {
     region: awsRegion,
