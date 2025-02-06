@@ -14,10 +14,16 @@ const projectName = process.env.PROJECT_NAME
 const awsRegion = process.env.AWS_REGION
 const baseDomain = process.env.DOMAIN_NAME
 
+const gitUsername = process.env.GIT_USERNAME
+const gitEmail = process.env.GIT_EMAIL
+
 const errors = Object.entries({
   clientName,
   projectName,
   awsRegion,
+  baseDomain,
+  gitUsername,
+  gitEmail,
 })
   .map(([key, value]) => {
     if (typeof value === "undefined") return key
@@ -37,6 +43,20 @@ new JaimiePortfolioStack(app, `Infra${clientName}${projectName}Stack-dev`, {
   projectName: projectName!,
   environment: "development",
   siteSubDomain: "dev",
+  env: {
+    region: awsRegion,
+  },
+})
+
+new JaimiePortfolioStack(app, `Infra${clientName}${projectName}Stack-prod`, {
+  domainName: baseDomain!,
+  clientName: clientName!,
+  projectName: projectName!,
+  environment: "production",
+  localEnv: {
+    GIT_USERNAME: process.env.GIT_USERNAME!,
+    GIT_EMAIL: process.env.GIT_EMAIL!,
+  },
   env: {
     region: awsRegion,
   },

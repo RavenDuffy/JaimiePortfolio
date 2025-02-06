@@ -1,7 +1,9 @@
 import * as cdk from "aws-cdk-lib"
-import { StackProps } from "aws-cdk-lib"
+import { StackProps, CfnOutput } from "aws-cdk-lib"
 import { OriginAccessIdentity } from "aws-cdk-lib/aws-cloudfront"
 import {
+  AmazonLinuxGeneration,
+  AmazonLinuxImage,
   GatewayVpcEndpointAwsService,
   Instance,
   InstanceClass,
@@ -19,32 +21,47 @@ import {
   SubnetType,
   Vpc,
 } from "aws-cdk-lib/aws-ec2"
-import { CanonicalUserPrincipal, PolicyStatement } from "aws-cdk-lib/aws-iam"
+import {
+  CanonicalUserPrincipal,
+  ManagedPolicy,
+  PolicyStatement,
+  Role,
+  ServicePrincipal,
+} from "aws-cdk-lib/aws-iam"
 import {
   Credentials,
   DatabaseInstance,
   DatabaseInstanceEngine,
 } from "aws-cdk-lib/aws-rds"
-import { BlockPublicAccess, Bucket, HttpMethods } from "aws-cdk-lib/aws-s3"
+import {
+  BlockPublicAccess,
+  Bucket,
+  BucketAccessControl,
+  HttpMethods,
+  ObjectOwnership,
+} from "aws-cdk-lib/aws-s3"
 import { Construct } from "constructs"
+import { readFileSync } from "fs"
 
 export interface StaticSiteProps extends StackProps {
   domainName: string
   clientName: string
   projectName: string
   environment: `development` | `production`
-  siteSubDomain: string
+  siteSubDomain?: string
+  localEnv?: { [key: string]: string }
 }
 
 export class JaimiePortfolioStack extends cdk.Stack {
   readonly vpc: Vpc
   readonly ingressSecurityGroup: SecurityGroup
-  readonly egressSecurityGroup: SecurityGroup
 
   readonly vm: Instance
   readonly db: DatabaseInstance
 
   readonly imageBucket: Bucket
+
+  readonly siteBucket: Bucket
 
   constructor(scope: Construct, id: string, props: StaticSiteProps) {
     super(scope, id, props)
@@ -55,6 +72,7 @@ export class JaimiePortfolioStack extends cdk.Stack {
       projectName,
       environment: envName,
       siteSubDomain,
+      localEnv,
     } = props
     const projectId = `${clientName}-${projectName}-${envName.substring(0, 3)}`
 
@@ -66,6 +84,11 @@ export class JaimiePortfolioStack extends cdk.Stack {
           cidrMask: 26,
           name: "isolatedSubnet",
           subnetType: SubnetType.PRIVATE_ISOLATED,
+        },
+        {
+          cidrMask: 26,
+          name: "publicSubnet",
+          subnetType: SubnetType.PUBLIC,
         },
       ],
       natGateways: 0,
@@ -81,63 +104,71 @@ export class JaimiePortfolioStack extends cdk.Stack {
       "ingress-security-group",
       {
         vpc: this.vpc,
-        allowAllOutbound: false,
-        securityGroupName: "IngressSecurityGroup",
+        allowAllOutbound: true,
+        // securityGroupName: "IngressSecurityGroup",
       }
     )
     this.ingressSecurityGroup.addIngressRule(
       Peer.ipv4("0.0.0.0/0"),
-      Port.tcp(22)
+      Port.tcp(22),
+      "ssh in"
     )
     this.ingressSecurityGroup.addIngressRule(
       Peer.ipv4("0.0.0.0/0"),
-      Port.tcp(80)
+      Port.tcp(80),
+      "http in"
     )
     this.ingressSecurityGroup.addIngressRule(
       Peer.ipv4("0.0.0.0/0"),
-      Port.tcp(443)
+      Port.tcp(443),
+      "https in"
     )
     this.ingressSecurityGroup.addIngressRule(
       Peer.ipv4("0.0.0.0/0"),
-      Port.tcp(1337)
+      Port.tcp(1337),
+      "strapi in"
     )
 
-    this.egressSecurityGroup = new SecurityGroup(
-      this,
-      "egress-security-group",
-      {
-        vpc: this.vpc,
-        allowAllOutbound: false,
-        securityGroupName: "EgressSecurityGroup",
-      }
-    )
-    this.egressSecurityGroup.addEgressRule(Peer.ipv4("0.0.0.0/0"), Port.tcp(22))
-    this.egressSecurityGroup.addEgressRule(Peer.ipv4("0.0.0.0/0"), Port.tcp(80))
-    this.egressSecurityGroup.addEgressRule(
-      Peer.ipv4("0.0.0.0/0"),
-      Port.tcp(443)
-    )
-    this.egressSecurityGroup.addEgressRule(
-      Peer.ipv4("0.0.0.0/0"),
-      Port.tcp(1337)
-    )
-
+    const vmRole = new Role(this, `${projectId}-VMRole`, {
+      assumedBy: new ServicePrincipal("ec2.amazonaws.com"),
+      managedPolicies: [
+        ManagedPolicy.fromAwsManagedPolicyName("AmazonS3ReadOnlyAccess"),
+        // ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"),
+      ],
+    })
     this.vm = new Instance(this, `${projectId}-StrapiVM`, {
       instanceType: new InstanceType("t2.small"),
       // images from here: https://cloud-images.ubuntu.com/locator/ec2/
-      machineImage: MachineImage.fromSsmParameter(
-        "/aws/service/canonical/ubuntu/server/jammy/stable/current/amd64/hvm/ebs-gp2/ami-id",
-        { os: OperatingSystemType.LINUX }
-      ),
+      // machineImage: MachineImage.fromSsmParameter(
+      //   "/aws/service/canonical/ubuntu/server/jammy/stable/current/amd64/hvm/ebs-gp2/ami-id",
+      //   { os: OperatingSystemType.LINUX }
+      // ),
+      machineImage: new AmazonLinuxImage({
+        generation: AmazonLinuxGeneration.AMAZON_LINUX_2023,
+      }),
+      role: vmRole,
       vpc: this.vpc,
+      vpcSubnets: this.vpc.selectSubnets({ subnets: this.vpc.publicSubnets }),
       securityGroup: this.ingressSecurityGroup,
       // in order to use the .pem private key you'll need to create this manually
-      keyPair: new KeyPair(this, "StrapiEc2Pair", {
-        keyPairName: "strapi-ec2-pair",
+      keyPair: new KeyPair(this, `StrapiEc2Pair-${envName}`, {
+        keyPairName: `strapi-ec2-pair-${envName}`,
         format: KeyPairFormat.PEM,
         type: KeyPairType.RSA,
       }),
     })
+
+    let strapiScript = readFileSync("./lib/strapi/strapi-runner.sh", "utf-8")
+    if (typeof localEnv !== "undefined") {
+      const localEnvKeys = Object.keys(localEnv)
+      localEnvKeys?.forEach((envVar) => {
+        strapiScript = strapiScript.replaceAll(
+          `{{${envVar}}}`,
+          localEnv[envVar]!
+        )
+      })
+    }
+    this.vm.addUserData(strapiScript)
 
     this.db = new DatabaseInstance(this, `${projectId}-StrapiDB`, {
       // name can only be alphanumeric
@@ -165,13 +196,18 @@ export class JaimiePortfolioStack extends cdk.Stack {
 
     this.imageBucket = new Bucket(this, `${projectId}-StrapiBucket`, {
       // bucket names must be unique *globally* (actual globe btw)
-      bucketName: `${siteSubDomain}-strapi.${domainName}`,
+      // bucket names must also not use '.' or aws' wildcard ssl will fail
+      bucketName: `${
+        siteSubDomain ? `${siteSubDomain}-` : ``
+      }strapi-${domainName.replace(".", "-")}`,
       blockPublicAccess: new BlockPublicAccess({
         blockPublicAcls: false,
         ignorePublicAcls: false,
         blockPublicPolicy: true,
         restrictPublicBuckets: true,
       }),
+      accessControl: BucketAccessControl.BUCKET_OWNER_FULL_CONTROL,
+      objectOwnership: ObjectOwnership.BUCKET_OWNER_PREFERRED,
       autoDeleteObjects: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       cors: [
@@ -180,6 +216,7 @@ export class JaimiePortfolioStack extends cdk.Stack {
           allowedMethods: [HttpMethods.GET],
           // CHANGE ASAP JUST FOR TESTING
           allowedOrigins: ["*"],
+          maxAge: 3000,
         },
       ],
     })
@@ -188,7 +225,7 @@ export class JaimiePortfolioStack extends cdk.Stack {
         actions: [
           "s3:PutObject",
           "s3:GetObject",
-          "s3:ListBucket",
+          // "s3:ListBucket", // this for some reason breaks the bucket
           "s3:DeleteObject",
           "s3:PutObjectAcl",
         ],
@@ -200,5 +237,9 @@ export class JaimiePortfolioStack extends cdk.Stack {
         ],
       })
     )
+
+    // this.vm.instance.
+
+    // this.siteBucket = new Bucket(this, `${projectId}-SiteBucket`, {})
   }
 }
