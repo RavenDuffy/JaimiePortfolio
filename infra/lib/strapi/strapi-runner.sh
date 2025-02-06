@@ -17,7 +17,7 @@ echo "git installed and config done" >> /tmp/init-log.txt
 
 mkdir /home/ec2-user/github
 echo $(ls -a) > /tmp/init-log.txt
-git clone -n --depth=1 --filter=tree:0 https://github.com/RavenDuffy/JaimiePortfolio.git /home/ec2-user/github
+git clone -n --depth=1 --filter=tree:0 {{GIT_REPO_URL}} /home/ec2-user/github
 cd /home/ec2-user/github
 git sparse-checkout set --no-cone /cms
 git checkout

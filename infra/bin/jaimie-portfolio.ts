@@ -16,6 +16,7 @@ const baseDomain = process.env.DOMAIN_NAME
 
 const gitUsername = process.env.GIT_USERNAME
 const gitEmail = process.env.GIT_EMAIL
+const gitRepoUrl = process.env.GIT_REPO_URL
 
 const errors = Object.entries({
   clientName,
@@ -24,6 +25,7 @@ const errors = Object.entries({
   baseDomain,
   gitUsername,
   gitEmail,
+  gitRepoUrl,
 })
   .map(([key, value]) => {
     if (typeof value === "undefined") return key
@@ -56,6 +58,7 @@ new JaimiePortfolioStack(app, `Infra${clientName}${projectName}Stack-prod`, {
   localEnv: {
     GIT_USERNAME: process.env.GIT_USERNAME!,
     GIT_EMAIL: process.env.GIT_EMAIL!,
+    GIT_REPO_URL: process.env.GIT_REPO_URL!,
   },
   env: {
     region: awsRegion,
