@@ -19,10 +19,10 @@ if [ ! -e "/home/ec2-user/cms" ]; then
   mkdir /home/ec2-user/github
   git clone -n --depth=1 --filter=tree:0 {{GIT_REPO_URL}} /home/ec2-user/github
   cd /home/ec2-user/github
-  git sparse-checkout set --no-cone /cms
+  git sparse-checkout set --no-cone /cms /infra/lib/pm2
   git checkout
   sudo mv /home/ec2-user/github/cms /home/ec2-user/cms
-  sudo rm -rf /home/ec2-user/github
+  # sudo rm -rf /home/ec2-user/github
   cd /
   echo "repo cloned to ~/cms" >> /tmp/init-log.txt
 
