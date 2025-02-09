@@ -3,7 +3,7 @@ export default {
     {
       name: "cms",
       cwd: "/home/ec2-user/cms",
-      scripts: "npm",
+      scripts: "sudo npm",
       args: "start",
       env: {
         NODE_ENV: process.env.NODE_ENV,

@@ -129,47 +129,6 @@ export class JaimiePortfolioStack extends cdk.Stack {
       "strapi in"
     )
 
-    const vmRole = new Role(this, `${projectId}-VMRole`, {
-      assumedBy: new ServicePrincipal("ec2.amazonaws.com"),
-      managedPolicies: [
-        ManagedPolicy.fromAwsManagedPolicyName("AmazonS3ReadOnlyAccess"),
-        // ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"),
-      ],
-    })
-    this.vm = new Instance(this, `${projectId}-StrapiVM`, {
-      instanceType: new InstanceType("t2.small"),
-      // images from here: https://cloud-images.ubuntu.com/locator/ec2/
-      // machineImage: MachineImage.fromSsmParameter(
-      //   "/aws/service/canonical/ubuntu/server/jammy/stable/current/amd64/hvm/ebs-gp2/ami-id",
-      //   { os: OperatingSystemType.LINUX }
-      // ),
-      machineImage: new AmazonLinuxImage({
-        generation: AmazonLinuxGeneration.AMAZON_LINUX_2023,
-      }),
-      role: vmRole,
-      vpc: this.vpc,
-      vpcSubnets: this.vpc.selectSubnets({ subnets: this.vpc.publicSubnets }),
-      securityGroup: this.ingressSecurityGroup,
-      // in order to use the .pem private key you'll need to create this manually
-      keyPair: new KeyPair(this, `StrapiEc2Pair-${envName}`, {
-        keyPairName: `strapi-ec2-pair-${envName}`,
-        format: KeyPairFormat.PEM,
-        type: KeyPairType.RSA,
-      }),
-    })
-
-    let strapiScript = readFileSync("./lib/strapi/strapi-runner.sh", "utf-8")
-    if (typeof localEnv !== "undefined") {
-      const localEnvKeys = Object.keys(localEnv)
-      localEnvKeys?.forEach((envVar) => {
-        strapiScript = strapiScript.replaceAll(
-          `{{${envVar}}}`,
-          localEnv[envVar]!
-        )
-      })
-    }
-    this.vm.addUserData(strapiScript)
-
     this.db = new DatabaseInstance(this, `${projectId}-StrapiDB`, {
       // name can only be alphanumeric
       databaseName: "strapipostgres",
@@ -237,6 +196,49 @@ export class JaimiePortfolioStack extends cdk.Stack {
         ],
       })
     )
+
+    const vmRole = new Role(this, `${projectId}-VMRole`, {
+      assumedBy: new ServicePrincipal("ec2.amazonaws.com"),
+      managedPolicies: [
+        ManagedPolicy.fromAwsManagedPolicyName("AmazonS3ReadOnlyAccess"),
+        // ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"),
+      ],
+    })
+    this.vm = new Instance(this, `${projectId}-StrapiVM`, {
+      instanceType: new InstanceType("t2.small"),
+      // images from here: https://cloud-images.ubuntu.com/locator/ec2/
+      // machineImage: MachineImage.fromSsmParameter(
+      //   "/aws/service/canonical/ubuntu/server/jammy/stable/current/amd64/hvm/ebs-gp2/ami-id",
+      //   { os: OperatingSystemType.LINUX }
+      // ),
+      machineImage: new AmazonLinuxImage({
+        generation: AmazonLinuxGeneration.AMAZON_LINUX_2023,
+      }),
+      role: vmRole,
+      vpc: this.vpc,
+      vpcSubnets: this.vpc.selectSubnets({ subnets: this.vpc.publicSubnets }),
+      securityGroup: this.ingressSecurityGroup,
+      // in order to use the .pem private key you'll need to create this manually
+      keyPair: new KeyPair(this, `StrapiEc2Pair-${envName}`, {
+        keyPairName: `strapi-ec2-pair-${envName}`,
+        format: KeyPairFormat.PEM,
+        type: KeyPairType.RSA,
+      }),
+    })
+
+    let strapiScript = readFileSync("./lib/strapi/strapi-runner.sh", "utf-8")
+    if (typeof localEnv !== "undefined") {
+      localEnv.DATABASE_HOST = this.db.instanceEndpoint.hostname
+      localEnv.AWS_BUCKET_NAME = this.imageBucket.bucketName
+      const localEnvKeys = Object.keys(localEnv)
+      localEnvKeys?.forEach((envVar) => {
+        strapiScript = strapiScript.replaceAll(
+          `{{${envVar}}}`,
+          localEnv[envVar]!
+        )
+      })
+    }
+    this.vm.addUserData(strapiScript)
 
     // this.vm.instance.
 

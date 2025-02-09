@@ -11,21 +11,37 @@ require("dotenv").config({
 
 const clientName = process.env.CLIENT_NAME
 const projectName = process.env.PROJECT_NAME
-const awsRegion = process.env.AWS_REGION
 const baseDomain = process.env.DOMAIN_NAME
 
 const gitUsername = process.env.GIT_USERNAME
 const gitEmail = process.env.GIT_EMAIL
 const gitRepoUrl = process.env.GIT_REPO_URL
 
+const dbHost = process.env.DATABASE_HOST
+const dbPort = process.env.DATABASE_PORT
+const dbName = process.env.DATABASE_NAME
+const dbUsername = process.env.DATABASE_USERNAME
+const dbPassword = process.env.DATABASE_PASSWORD
+
+const awsRegion = process.env.AWS_REGION
+const awsKey = process.env.AWS_ACCESS_KEY_ID
+const awsSecret = process.env.AWS_SECRET_ACCESS_KEY
+
 const errors = Object.entries({
   clientName,
   projectName,
-  awsRegion,
   baseDomain,
   gitUsername,
   gitEmail,
   gitRepoUrl,
+  dbHost,
+  dbPort,
+  dbName,
+  dbUsername,
+  dbPassword,
+  awsKey,
+  awsSecret,
+  awsRegion,
 })
   .map(([key, value]) => {
     if (typeof value === "undefined") return key
@@ -60,6 +76,13 @@ new JaimiePortfolioStack(app, `Infra${clientName}${projectName}Stack-prod`, {
     GIT_EMAIL: process.env.GIT_EMAIL!,
     GIT_REPO_URL: process.env.GIT_REPO_URL!,
     NODE_ENV: "production",
+    DATABASE_PORT: process.env.DATABASE_PORT!,
+    DATABASE_NAME: process.env.DATABASE_NAME!,
+    DATABASE_USERNAME: process.env.DATABASE_USERNAME!,
+    DATABASE_PASSWORD: process.env.DATABASE_PASSWORD!,
+    AWS_REGION: process.env.AWS_REGION!,
+    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID!,
+    AWS_ACCESS_SECRET: process.env.AWS_SECRET_ACCESS_KEY!,
   },
   env: {
     region: awsRegion,
