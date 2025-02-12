@@ -1,9 +1,11 @@
+console.log("CWD:", process.cwd())
+
 export default {
   apps: [
     {
       name: "cms",
       cwd: "/home/ec2-user/cms",
-      scripts: "sudo npm",
+      scripts: "npm",
       args: "start",
       env: {
         NODE_ENV: process.env.NODE_ENV,
