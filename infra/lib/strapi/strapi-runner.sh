@@ -40,10 +40,10 @@ if [ ! -e "/home/ec2-user/cms" ]; then
   mkdir /home/ec2-user/github
   git clone -b $BRANCH -n --depth=1 --filter=tree:0 {{GIT_REPO_URL}} /home/ec2-user/github
   cd /home/ec2-user/github
-  git sparse-checkout set --no-cone /cms /infra/lib/pm2/ecosystem.config.ts
+  git sparse-checkout set --no-cone /cms /infra/lib/pm2/ecosystem.json
   git checkout
   sudo mv /home/ec2-user/github/cms /home/ec2-user/cms
-  sudo mv /home/ec2-user/github/infra/lib/pm2/ecosystem.config.ts /home/ec2-user/ecosystem.config.ts
+  sudo mv /home/ec2-user/github/infra/lib/pm2/ecosystem.json /home/ec2-user/ecosystem.json
   sudo rm -rf /home/ec2-user/github
   sudo chmod -R 777 /home/ec2-user/cms/
   echo "Repo cloned to ~/cms" >> /tmp/init-log.txt
@@ -59,7 +59,8 @@ else
 fi
 
 cd /home/ec2-user
-sudo npm i -g pm2 bun swc
-sudo chmod -R 777 /home/ec2-user/ecosystem.config.ts
-npx swc /home/ec2-user/ecosystem.config.ts
-pm2 start /home/ec2-user/ecosystem.config.js
+sudo npm i -g pm2 bun
+sudo rm -rf /home/ec2-user/ecosystem.json
+sudo chmod -R 777 /home/ec2-user/ecosystem.json
+pm2 start /home/ec2-user/ecosystem.config.json
+echo "Preparing pm2" >> /tmp/init-log.txt

@@ -1,0 +1,10 @@
+{
+  "apps": [
+    {
+      "name": "cms",
+      "cwd": "/home/ec2-user/cms",
+      "script": "npm",
+      "args": "start"
+    }
+  ]
+}
