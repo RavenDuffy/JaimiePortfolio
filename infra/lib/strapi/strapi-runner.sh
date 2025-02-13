@@ -18,6 +18,13 @@ echo export DATABASE_PASSWORD="{{DATABASE_PASSWORD}}" >> /etc/profile
 echo export AWS_REGION="{{AWS_REGION}}" >> /etc/profile
 echo export AWS_ACCESS_KEY_ID="{{AWS_ACCESS_KEY_ID}}" >> /etc/profile
 echo export AWS_ACCESS_SECRET="{{AWS_ACCESS_SECRET}}" >> /etc/profile
+echo export STRAPI_PASS="{{STRAPI_PASS}}" >> /etc/profile
+
+echo export JWT_SECRET="$(openssl rand -base64 32)" >> /etc/profile
+echo export APP_KEYS="$(openssl rand -base64 16),$(openssl rand -base64 16),$(openssl rand -base64 16),$(openssl rand -base64 16)" >> /etc/profile
+echo export API_TOKEN_SALT="$(openssl rand -base64 32)" >> /etc/profile
+echo export ADMIN_JWT_SECRET="$(openssl rand -base64 32)" >> /etc/profile
+echo export TRANSFER_TOKEN_SALT="$(openssl rand -base64 32)" >> /etc/profile
 
 sudo curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
 sudo yum install nodejs -y --best --allowerasing
@@ -38,17 +45,21 @@ if [ ! -e "/home/ec2-user/cms" ]; then
   sudo mv /home/ec2-user/github/cms /home/ec2-user/cms
   sudo mv /home/ec2-user/github/infra/lib/pm2/ecosystem.config.ts /home/ec2-user/ecosystem.config.ts
   sudo rm -rf /home/ec2-user/github
-  cd /
+  sudo chmod -R 777 /home/ec2-user/cms/
   echo "Repo cloned to ~/cms" >> /tmp/init-log.txt
 
   cd /home/ec2-user/cms
   sudo npm install
+  sudo npm i better-sqlite3
   sudo NODE_ENV="{{NODE_ENV}}" npm run build
+  sudo chmod -R 777 /home/ec2-user/cms/dist
   echo "Installed cms modules" >> /tmp/init-log.txt
 else
   echo "Found cms modules; skipping" >> /tmp/init-log.txt
 fi
 
 cd /home/ec2-user
-npm i -g pm2 bun
+sudo npm i -g pm2 bun swc
+sudo chmod -R 777 /home/ec2-user/ecosystem.config.ts
+npx swc /home/ec2-user/ecosystem.config.ts
 pm2 start /home/ec2-user/ecosystem.config.js

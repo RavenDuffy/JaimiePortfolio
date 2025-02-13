@@ -27,6 +27,9 @@ const awsRegion = process.env.AWS_REGION
 const awsKey = process.env.AWS_ACCESS_KEY_ID
 const awsSecret = process.env.AWS_SECRET_ACCESS_KEY
 
+const jwtSecret = process.env.JWT_SECRET
+const strapiPass = process.env.STRAPI_PASS
+
 const errors = Object.entries({
   clientName,
   projectName,
@@ -42,6 +45,8 @@ const errors = Object.entries({
   awsKey,
   awsSecret,
   awsRegion,
+  jwtSecret,
+  strapiPass,
 })
   .map(([key, value]) => {
     if (typeof value === "undefined") return key
@@ -72,17 +77,18 @@ new JaimiePortfolioStack(app, `Infra${clientName}${projectName}Stack-prod`, {
   projectName: projectName!,
   environment: "production",
   localEnv: {
-    GIT_USERNAME: process.env.GIT_USERNAME!,
-    GIT_EMAIL: process.env.GIT_EMAIL!,
-    GIT_REPO_URL: process.env.GIT_REPO_URL!,
+    GIT_USERNAME: gitUsername!,
+    GIT_EMAIL: gitEmail!,
+    GIT_REPO_URL: gitRepoUrl!,
     NODE_ENV: "production",
-    DATABASE_PORT: process.env.DATABASE_PORT!,
-    DATABASE_NAME: process.env.DATABASE_NAME!,
-    DATABASE_USERNAME: process.env.DATABASE_USERNAME!,
-    DATABASE_PASSWORD: process.env.DATABASE_PASSWORD!,
-    AWS_REGION: process.env.AWS_REGION!,
-    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID!,
-    AWS_ACCESS_SECRET: process.env.AWS_SECRET_ACCESS_KEY!,
+    DATABASE_PORT: dbPort!,
+    DATABASE_NAME: dbName!,
+    DATABASE_USERNAME: dbUsername!,
+    DATABASE_PASSWORD: dbPassword!,
+    AWS_REGION: awsRegion!,
+    AWS_ACCESS_KEY_ID: awsKey!,
+    AWS_ACCESS_SECRET: awsSecret!,
+    STRAPI_PASS: strapiPass!,
   },
   env: {
     region: awsRegion,

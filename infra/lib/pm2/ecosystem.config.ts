@@ -1,5 +1,3 @@
-console.log("CWD:", process.cwd())
-
 export default {
   apps: [
     {
