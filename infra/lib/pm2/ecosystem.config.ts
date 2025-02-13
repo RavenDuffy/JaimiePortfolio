@@ -5,7 +5,7 @@ export default {
     {
       name: "cms",
       cwd: "/home/ec2-user/cms",
-      scripts: "node",
+      scripts: "npm",
       args: "start",
       env: {
         NODE_ENV: process.env.NODE_ENV,
