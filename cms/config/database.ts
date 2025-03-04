@@ -61,6 +61,7 @@ export default ({ env }) => {
   const connection = {
     client: "postgres",
     connection: {
+      connectionString: "",
       host: env("DATABASE_HOST", "localhost"),
       port: env.int("DATABASE_PORT", 5432),
       database: env("DATABASE_NAME", "strapi"),
@@ -72,7 +73,7 @@ export default ({ env }) => {
   }
 
   return {
-    connection: { ...connection },
+    connection,
     defaultConnection: "default",
     acquireConnectionTimeout: env.int("DATABASE_CONNECTION_TIMEOUT", 60000),
     // ssl: {
