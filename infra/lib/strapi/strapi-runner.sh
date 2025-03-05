@@ -3,6 +3,8 @@
 sudo yum update -y
 sudo yum install -y jq
 
+echo "Initialisation started, running as $(whoami)" >> /tmp/init-log.txt
+
 if [ "production" = "{{NODE_ENV}}" ]; then
   BRANCH="main"
 else
@@ -10,7 +12,13 @@ else
 fi
 echo "Branch set to $BRANCH" >> /tmp/init-log.txt
 
+echo "Removing old env vars" >> /tmp/init-log.txt
+sudo sh -c "sed '/^# --- ENV-SET-BLOCK-START ---$/,/^# --- ENV-SET-BLOCK-END ---$/d' /etc/profile > /tmp/profile-copy"
+sudo sh -c "cat /tmp/profile-copy > /etc/profile"
+sudo rm /tmp/profile-copy
+
 echo "Setting env vars" >> /tmp/init-log.txt
+echo "# --- ENV-SET-BLOCK-START ---" >> /etc/profile
 echo export DATABASE_SSL=true >> /etc/profile
 
 echo export NODE_ENV="{{NODE_ENV}}" >> /etc/profile
@@ -32,6 +40,7 @@ sudo sh -c "echo 'export DATABASE_PORT=$(echo $DATABASE_SECRET_VALUES | jq -r .p
 sudo sh -c "echo 'export DATABASE_NAME=$(echo $DATABASE_SECRET_VALUES | jq -r .dbname)' >> /etc/profile"
 sudo sh -c "echo 'export DATABASE_USERNAME=$(echo $DATABASE_SECRET_VALUES | jq -r .username)' >> /etc/profile"
 sudo sh -c "echo 'export DATABASE_PASSWORD=$(echo $DATABASE_SECRET_VALUES | jq -r .password)' >> /etc/profile"
+echo "# --- ENV-SET-BLOCK-END ---" >> /etc/profile
 
 curl https://truststore.pki.rds.amazonaws.com/{{AWS_REGION}}/{{AWS_REGION}}-bundle.pem > /home/ec2-user/rds.crt
 echo "Downloaded ssl certification bundle for {{AWS_REGION}}" >> /tmp/init-log.txt
@@ -68,10 +77,14 @@ else
   echo "Found cms modules; skipping" >> /tmp/init-log.txt
 fi
 
-# This section is creating a user under [unknown]@strapi and trying to connect via that
+echo "Preparing pm2" >> /tmp/init-log.txt
 cd /home/ec2-user
 sudo npm i -g pm2 bun
 sudo chmod -R 777 /home/ec2-user/ecosystem.json
-# TODO: add back line below (currently removed due to memory leak)
-# pm2 start /home/ec2-user/ecosystem.json
-echo "Preparing pm2" >> /tmp/init-log.txt
+sudo -u ec2-user /bin/bash -l -c "pm2 start /home/ec2-user/ecosystem.json"
+
+if [ "$(pm2 id cms)" != "[]" ]; then
+  echo "Cms running on pid: $(pm2 pid cms)" >> /tmp/init-log.txt
+else
+  echo "Cms not running" >> /tmp/init-log.txt
+fi
