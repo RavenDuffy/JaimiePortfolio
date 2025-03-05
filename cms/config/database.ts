@@ -85,9 +85,9 @@ export default ({ env }) => {
       user: env("DATABASE_USERNAME", ""),
       password: env("DATABASE_PASSWORD", ""),
       schema: env("DATABASE_SCHEMA", "public"),
-      // ssl: {
-      // ca: fs.readFileSync(`${__dirname}/`)
-      // },
+      ssl: env("DATABASE_SSL", false) && {
+        ca: fs.readFileSync(`/home/ec2-user/rds.crt`),
+      },
     },
     useNullAsDefault: true,
   }
