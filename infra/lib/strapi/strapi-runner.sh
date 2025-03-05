@@ -1,6 +1,7 @@
 #cloud-boothook
 #!/bin/sh
-yum update -y
+sudo yum update -y
+sudo yum install -y jq
 
 if [ "production" = "{{NODE_ENV}}" ]; then
   BRANCH="main"
@@ -10,14 +11,13 @@ fi
 echo "Branch set to $BRANCH" >> /tmp/init-log.txt
 
 echo "Setting env vars" >> /tmp/init-log.txt
+echo export DATABASE_SSL=true >> /etc/profile
+
 echo export NODE_ENV="{{NODE_ENV}}" >> /etc/profile
-echo export DATABASE_PORT="{{DATABASE_PORT}}" >> /etc/profile
-echo export DATABASE_NAME="{{DATABASE_NAME}}" >> /etc/profile
-echo export DATABASE_USERNAME="{{DATABASE_USERNAME}}" >> /etc/profile
-echo export DATABASE_PASSWORD="{{DATABASE_PASSWORD}}" >> /etc/profile
 echo export AWS_REGION="{{AWS_REGION}}" >> /etc/profile
 echo export AWS_ACCESS_KEY_ID="{{AWS_ACCESS_KEY_ID}}" >> /etc/profile
-echo export AWS_ACCESS_SECRET="{{AWS_ACCESS_SECRET}}" >> /etc/profile
+echo export AWS_SECRET_ACCESS_KEY="{{AWS_SECRET_ACCESS_KEY}}" >> /etc/profile
+echo export AWS_BUCKET_NAME="{{AWS_BUCKET_NAME}}" >> /etc/profile
 echo export STRAPI_PASS="{{STRAPI_PASS}}" >> /etc/profile
 
 echo export JWT_SECRET="$(openssl rand -base64 32)" >> /etc/profile
@@ -25,6 +25,16 @@ echo export APP_KEYS="$(openssl rand -base64 16),$(openssl rand -base64 16),$(op
 echo export API_TOKEN_SALT="$(openssl rand -base64 32)" >> /etc/profile
 echo export ADMIN_JWT_SECRET="$(openssl rand -base64 32)" >> /etc/profile
 echo export TRANSFER_TOKEN_SALT="$(openssl rand -base64 32)" >> /etc/profile
+
+echo export DATABASE_HOST="{{DATABASE_HOST}}" >> /etc/profile
+DATABASE_SECRET_VALUES=$(aws secretsmanager get-secret-value --region {{AWS_REGION}} --secret-id {{SECRET_ARN}} --query SecretString --output text)
+sudo sh -c "echo 'export DATABASE_PORT=$(echo $DATABASE_SECRET_VALUES | jq -r .port)' >> /etc/profile"
+sudo sh -c "echo 'export DATABASE_NAME=$(echo $DATABASE_SECRET_VALUES | jq -r .dbname)' >> /etc/profile"
+sudo sh -c "echo 'export DATABASE_USERNAME=$(echo $DATABASE_SECRET_VALUES | jq -r .username)' >> /etc/profile"
+sudo sh -c "echo 'export DATABASE_PASSWORD=$(echo $DATABASE_SECRET_VALUES | jq -r .password)' >> /etc/profile"
+
+curl https://truststore.pki.rds.amazonaws.com/{{AWS_REGION}}/{{AWS_REGION}}-bundle.pem > /home/ec2-user/rds.crt
+echo "Downloaded ssl certification bundle for {{AWS_REGION}}" >> /tmp/init-log.txt
 
 sudo curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
 sudo yum install nodejs -y --best --allowerasing
@@ -58,9 +68,10 @@ else
   echo "Found cms modules; skipping" >> /tmp/init-log.txt
 fi
 
+# This section is creating a user under [unknown]@strapi and trying to connect via that
 cd /home/ec2-user
 sudo npm i -g pm2 bun
-sudo rm -rf /home/ec2-user/ecosystem.json
 sudo chmod -R 777 /home/ec2-user/ecosystem.json
-pm2 start /home/ec2-user/ecosystem.config.json
+# TODO: add back line below (currently removed due to memory leak)
+# pm2 start /home/ec2-user/ecosystem.json
 echo "Preparing pm2" >> /tmp/init-log.txt

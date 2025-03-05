@@ -82,12 +82,11 @@ new JaimiePortfolioStack(app, `Infra${clientName}${projectName}Stack-prod`, {
     GIT_REPO_URL: gitRepoUrl!,
     NODE_ENV: "production",
     DATABASE_PORT: dbPort!,
-    DATABASE_NAME: dbName!,
     DATABASE_USERNAME: dbUsername!,
     DATABASE_PASSWORD: dbPassword!,
     AWS_REGION: awsRegion!,
     AWS_ACCESS_KEY_ID: awsKey!,
-    AWS_ACCESS_SECRET: awsSecret!,
+    AWS_SECRET_ACCESS_KEY: awsSecret!,
     STRAPI_PASS: strapiPass!,
   },
   env: {

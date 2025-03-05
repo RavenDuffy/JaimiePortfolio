@@ -1,5 +1,6 @@
 import * as cdk from "aws-cdk-lib"
-import { StackProps, CfnOutput } from "aws-cdk-lib"
+import { StackProps } from "aws-cdk-lib"
+import { Certificate } from "aws-cdk-lib/aws-certificatemanager"
 import { OriginAccessIdentity } from "aws-cdk-lib/aws-cloudfront"
 import {
   AmazonLinuxGeneration,
@@ -13,8 +14,6 @@ import {
   KeyPair,
   KeyPairFormat,
   KeyPairType,
-  MachineImage,
-  OperatingSystemType,
   Peer,
   Port,
   SecurityGroup,
@@ -29,6 +28,7 @@ import {
   ServicePrincipal,
 } from "aws-cdk-lib/aws-iam"
 import {
+  CaCertificate,
   Credentials,
   DatabaseInstance,
   DatabaseInstanceEngine,
@@ -40,6 +40,7 @@ import {
   HttpMethods,
   ObjectOwnership,
 } from "aws-cdk-lib/aws-s3"
+import { Secret } from "aws-cdk-lib/aws-secretsmanager"
 import { Construct } from "constructs"
 import { readFileSync } from "fs"
 
@@ -131,22 +132,28 @@ export class JaimiePortfolioStack extends cdk.Stack {
 
     this.db = new DatabaseInstance(this, `${projectId}-StrapiDB`, {
       // name can only be alphanumeric
-      databaseName: "strapipostgres",
+      databaseName: "cms",
       engine: DatabaseInstanceEngine.POSTGRES,
       vpc: this.vpc,
       vpcSubnets: this.vpc.selectSubnets({ subnets: this.vpc.isolatedSubnets }),
-      credentials: Credentials.fromGeneratedSecret("CDK_USER"),
+      credentials: Credentials.fromGeneratedSecret("db_user"),
       instanceType: InstanceType.of(
         InstanceClass.BURSTABLE3,
         InstanceSize.MICRO
       ),
       port: 5432,
-      // in GB
-      allocatedStorage: 5,
+      allocatedStorage: 5, // in GB
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       deletionProtection: false,
+      // caCertificate: new Certificate(this, 'test', {})
+      caCertificate: CaCertificate.RDS_CA_RSA2048_G1,
     })
     this.db.connections.allowFromAnyIpv4(Port.tcp(5432))
+
+    // new cdk.CfnOutput(this, `${projectId}-cert`, {
+    //   key: `${projectId}-cert`,
+    //   value: CaCertificate.RDS_CA_RSA2048_G1.toString(),
+    // })
 
     const cloudfrontOAI = new OriginAccessIdentity(
       this,
@@ -201,6 +208,7 @@ export class JaimiePortfolioStack extends cdk.Stack {
       assumedBy: new ServicePrincipal("ec2.amazonaws.com"),
       managedPolicies: [
         ManagedPolicy.fromAwsManagedPolicyName("AmazonS3ReadOnlyAccess"),
+        ManagedPolicy.fromAwsManagedPolicyName("SecretsManagerReadWrite"),
         // ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"),
       ],
     })
@@ -226,8 +234,15 @@ export class JaimiePortfolioStack extends cdk.Stack {
       }),
     })
 
+    this.db.connections.allowFrom(
+      this.vm,
+      Port.tcp(parseInt(this.db.dbInstanceEndpointPort) || 5432)
+    )
+
     let strapiScript = readFileSync("./lib/strapi/strapi-runner.sh", "utf-8")
     if (typeof localEnv !== "undefined") {
+      const secretArn = this.db.secret?.secretFullArn
+      if (secretArn) localEnv.SECRET_ARN = secretArn
       localEnv.DATABASE_HOST = this.db.instanceEndpoint.hostname
       localEnv.AWS_BUCKET_NAME = this.imageBucket.bucketName
       const localEnvKeys = Object.keys(localEnv)
@@ -239,9 +254,5 @@ export class JaimiePortfolioStack extends cdk.Stack {
       })
     }
     this.vm.addUserData(strapiScript)
-
-    // this.vm.instance.
-
-    // this.siteBucket = new Bucket(this, `${projectId}-SiteBucket`, {})
   }
 }
