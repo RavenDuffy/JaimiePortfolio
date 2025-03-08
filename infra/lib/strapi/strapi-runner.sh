@@ -27,6 +27,8 @@ echo export AWS_ACCESS_KEY_ID="{{AWS_ACCESS_KEY_ID}}" >> /etc/profile
 echo export AWS_SECRET_ACCESS_KEY="{{AWS_SECRET_ACCESS_KEY}}" >> /etc/profile
 echo export AWS_BUCKET_NAME="{{AWS_BUCKET_NAME}}" >> /etc/profile
 echo export STRAPI_PASS="{{STRAPI_PASS}}" >> /etc/profile
+echo export STRAPI_BUCKET_ASSETS="{{STRAPI_BUCKET_ASSETS}}" >> /etc/profile
+echo export STRAPI_BUCKET="{{STRAPI_BUCKET}}" >> /etc/profile
 
 echo export JWT_SECRET="$(openssl rand -base64 32)" >> /etc/profile
 echo export APP_KEYS="$(openssl rand -base64 16),$(openssl rand -base64 16),$(openssl rand -base64 16),$(openssl rand -base64 16)" >> /etc/profile

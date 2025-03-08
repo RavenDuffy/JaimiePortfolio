@@ -29,6 +29,8 @@ const awsSecret = process.env.AWS_SECRET_ACCESS_KEY
 
 const jwtSecret = process.env.JWT_SECRET
 const strapiPass = process.env.STRAPI_PASS
+const strapiBucket = process.env.STRAPI_BUCKET
+const strapiBucketAssets = process.env.STRAPI_BUCKET_ASSETS
 
 const errors = Object.entries({
   clientName,
@@ -47,6 +49,8 @@ const errors = Object.entries({
   awsRegion,
   jwtSecret,
   strapiPass,
+  strapiBucket,
+  strapiBucketAssets,
 })
   .map(([key, value]) => {
     if (typeof value === "undefined") return key
@@ -88,6 +92,8 @@ new JaimiePortfolioStack(app, `Infra${clientName}${projectName}Stack-prod`, {
     AWS_ACCESS_KEY_ID: awsKey!,
     AWS_SECRET_ACCESS_KEY: awsSecret!,
     STRAPI_PASS: strapiPass!,
+    STRAPI_BUCKET: strapiBucket!,
+    STRAPI_BUCKET_ASSETS: strapiBucketAssets!,
   },
   env: {
     region: awsRegion,
