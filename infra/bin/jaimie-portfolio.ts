@@ -24,6 +24,7 @@ const dbUsername = process.env.DATABASE_USERNAME
 const dbPassword = process.env.DATABASE_PASSWORD
 
 const awsRegion = process.env.AWS_REGION
+const awsAccount = process.env.AWS_ACCOUNT
 const awsKey = process.env.AWS_ACCESS_KEY_ID
 const awsSecret = process.env.AWS_SECRET_ACCESS_KEY
 
@@ -47,6 +48,7 @@ const errors = Object.entries({
   awsKey,
   awsSecret,
   awsRegion,
+  awsAccount,
   jwtSecret,
   strapiPass,
   strapiBucket,
@@ -72,6 +74,7 @@ new JaimiePortfolioStack(app, `Infra${clientName}${projectName}Stack-dev`, {
   siteSubDomain: "dev",
   env: {
     region: awsRegion,
+    account: awsAccount,
   },
 })
 
@@ -97,5 +100,6 @@ new JaimiePortfolioStack(app, `Infra${clientName}${projectName}Stack-prod`, {
   },
   env: {
     region: awsRegion,
+    account: awsAccount,
   },
 })

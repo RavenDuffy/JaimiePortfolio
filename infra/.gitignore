@@ -7,6 +7,8 @@ node_modules
 .cdk.staging
 cdk.out
 
+cdk.context.json
+
 .yarn/install-state.gz
 yarn-debug.log*
 yarn-error.log*

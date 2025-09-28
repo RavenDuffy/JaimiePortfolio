@@ -7,6 +7,7 @@
     "build:synth": "npm run build && cdk synth",
     "watch": "tsc -w",
     "cdk": "cdk",
+    "synth": "cdk synth",
     "deploy-dev:singleton": "npm run build && cdk deploy --profile jaimie InfraJaimiePortfolioStack-dev",
     "deploy-prod:singleton": "npm run build && cdk deploy --profile jaimie InfraJaimiePortfolioStack-prod",
     "deploy-dev": "npm run build-frontend && npm run build && cdk deploy --profile jaimie InfraJaimiePortfolioStack-dev",
@@ -14,12 +15,12 @@
   },
   "devDependencies": {
     "@types/node": "22.5.4",
-    "aws-cdk": "^2.167.1",
+    "aws-cdk": "^2.1003.0",
     "ts-node": "^10.9.2",
     "typescript": "~5.6.2"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.167.1",
+    "aws-cdk-lib": "^2.182.0",
     "constructs": "^10.0.0",
     "dotenv": "^16.4.5",
     "source-map-support": "^0.5.21"

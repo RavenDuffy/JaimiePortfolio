@@ -1,7 +1,7 @@
 import * as cdk from "aws-cdk-lib"
 import { StackProps } from "aws-cdk-lib"
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager"
-import { OriginAccessIdentity } from "aws-cdk-lib/aws-cloudfront"
+import { Distribution, OriginAccessIdentity } from "aws-cdk-lib/aws-cloudfront"
 import {
   AmazonLinuxGeneration,
   AmazonLinuxImage,
@@ -20,6 +20,7 @@ import {
   SubnetType,
   Vpc,
 } from "aws-cdk-lib/aws-ec2"
+import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2"
 import {
   CanonicalUserPrincipal,
   ManagedPolicy,
@@ -33,6 +34,7 @@ import {
   DatabaseInstance,
   DatabaseInstanceEngine,
 } from "aws-cdk-lib/aws-rds"
+import { HostedZone, IHostedZone } from "aws-cdk-lib/aws-route53"
 import {
   BlockPublicAccess,
   Bucket,
@@ -40,7 +42,6 @@ import {
   HttpMethods,
   ObjectOwnership,
 } from "aws-cdk-lib/aws-s3"
-import { Secret } from "aws-cdk-lib/aws-secretsmanager"
 import { Construct } from "constructs"
 import { readFileSync } from "fs"
 
@@ -60,7 +61,12 @@ export class JaimiePortfolioStack extends cdk.Stack {
   readonly vm: Instance
   readonly db: DatabaseInstance
 
-  readonly imageBucket: Bucket
+  readonly cmsZone: IHostedZone
+  readonly cmsOAI: OriginAccessIdentity
+  readonly cmsCert: Certificate
+  readonly cmsImageBucket: Bucket
+  readonly cmsDist: Distribution
+  readonly cmsALB: ApplicationLoadBalancer
 
   readonly siteBucket: Bucket
 
@@ -145,22 +151,16 @@ export class JaimiePortfolioStack extends cdk.Stack {
       allocatedStorage: 5, // in GB
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       deletionProtection: false,
-      // caCertificate: new Certificate(this, 'test', {})
       caCertificate: CaCertificate.RDS_CA_RSA2048_G1,
     })
     this.db.connections.allowFromAnyIpv4(Port.tcp(5432))
-
-    // new cdk.CfnOutput(this, `${projectId}-cert`, {
-    //   key: `${projectId}-cert`,
-    //   value: CaCertificate.RDS_CA_RSA2048_G1.toString(),
-    // })
 
     const cloudfrontOAI = new OriginAccessIdentity(
       this,
       `${projectId}--cloudfrontOAI`
     )
 
-    this.imageBucket = new Bucket(this, `${projectId}-StrapiBucket`, {
+    this.cmsImageBucket = new Bucket(this, `${projectId}-StrapiBucket`, {
       // bucket names must be unique *globally* (actual globe btw)
       // bucket names must also not use '.' or aws' wildcard ssl will fail
       bucketName: `${
@@ -186,7 +186,7 @@ export class JaimiePortfolioStack extends cdk.Stack {
         },
       ],
     })
-    this.imageBucket.addToResourcePolicy(
+    this.cmsImageBucket.addToResourcePolicy(
       new PolicyStatement({
         actions: [
           "s3:PutObject",
@@ -195,7 +195,7 @@ export class JaimiePortfolioStack extends cdk.Stack {
           "s3:DeleteObject",
           "s3:PutObjectAcl",
         ],
-        resources: [this.imageBucket.arnForObjects("*")],
+        resources: [this.cmsImageBucket.arnForObjects("*")],
         principals: [
           new CanonicalUserPrincipal(
             cloudfrontOAI.cloudFrontOriginAccessIdentityS3CanonicalUserId
@@ -209,7 +209,6 @@ export class JaimiePortfolioStack extends cdk.Stack {
       managedPolicies: [
         ManagedPolicy.fromAwsManagedPolicyName("AmazonS3ReadOnlyAccess"),
         ManagedPolicy.fromAwsManagedPolicyName("SecretsManagerReadWrite"),
-        // ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore"),
       ],
     })
     this.vm = new Instance(this, `${projectId}-StrapiVM`, {
@@ -244,7 +243,7 @@ export class JaimiePortfolioStack extends cdk.Stack {
       const secretArn = this.db.secret?.secretFullArn
       if (secretArn) localEnv.SECRET_ARN = secretArn
       localEnv.DATABASE_HOST = this.db.instanceEndpoint.hostname
-      localEnv.AWS_BUCKET_NAME = this.imageBucket.bucketName
+      localEnv.AWS_BUCKET_NAME = this.cmsImageBucket.bucketName
       const localEnvKeys = Object.keys(localEnv)
       localEnvKeys?.forEach((envVar) => {
         strapiScript = strapiScript.replaceAll(
@@ -254,5 +253,43 @@ export class JaimiePortfolioStack extends cdk.Stack {
       })
     }
     this.vm.addUserData(strapiScript)
+
+    // handle routing for vm
+    const domainNameCms = `strapi${
+      siteSubDomain ? `-${siteSubDomain}.` : `.`
+    }${domainName}`
+    this.cmsZone = new HostedZone(this, `${projectId}-CmsZone`, {
+      zoneName: domainNameCms,
+    })
+    this.cmsOAI = new OriginAccessIdentity(
+      this,
+      `${projectId}-CmsCloudfrontOAI`
+    )
+    this.cmsCert = new Certificate(this, `${projectId}-CmsCertificate`, {
+      domainName: domainNameCms,
+    })
+
+    // this.cmsALB = new ApplicationLoadBalancer(this, `${projectId}-CmsALB`, {
+    //   vpc: this.vpc,
+    // })
+    // const cmsALBName = new StringParameter(this, `${projectId}-CmsALBName`, {
+    //   stringValue: this.cmsALB.loadBalancerName,
+    // })
+    // this.cmsALB.addListener(`${projectId}-CmsALB-${cmsALBName}`, {
+    //   certificates: [this.cmsCert],
+    // })
+
+    // this.cmsDist = new Distribution(this, `${projectId}-CmsDistribution`, {
+    //   certificate: this.cmsCert,
+    //   defaultBehavior: {
+    //     origin: new HttpOrigin(domainNameCms, {}),
+    //   },
+    // })
+
+    // new ARecord(this, `${projectId}-CmsARecord`, {
+    //   recordName: domainNameCms,
+    //   target: RecordTarget.fromAlias(new CloudFrontTarget(this.cmsDist)),
+    //   zone: this.cmsZone,
+    // })
   }
 }
